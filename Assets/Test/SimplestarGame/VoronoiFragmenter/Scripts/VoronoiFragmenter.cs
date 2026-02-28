@@ -619,7 +619,9 @@ namespace SimplestarGame
 
         private void Start()
         {
-            GetComponent<Rigidbody>().useGravity = false;
+            var rb = GetComponent<Rigidbody>();
+            rb.useGravity = true;
+            rb.constraints = RigidbodyConstraints.FreezeAll;
         }
 
         public void FragmentAtPoint(Vector3 worldPoint)

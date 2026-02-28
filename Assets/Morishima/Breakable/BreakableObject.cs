@@ -1,5 +1,6 @@
 using SimplestarGame;
 using System;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 [RequireComponent(typeof(VoronoiFragmenter))]
@@ -17,6 +18,17 @@ public class BreakableObject : MonoBehaviour
     bool isBroken = false;
 
     public event Action<BreakableObject> OnBreakTriggered;
+    private void Start()
+    {
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
+            if (audioSource == null)
+            {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            }
+        }
+    }
 
     public void Break(Vector3 hitPoint, Vector3 hitNormal)
     {
