@@ -38,6 +38,7 @@ public class SysTimer : MonoBehaviour
                 break;
 
             case GameState.WaitForInput:
+
                 if (Input.GetKeyDown(KeyCode.Space))
                 {
                     ChangeState(GameState.MarusaPhase);
@@ -65,11 +66,12 @@ public class SysTimer : MonoBehaviour
                 break;
 
             case GameState.WaitForInput:
+                Destroy(currentObject);
                 // プレイヤーは残したまま待つ
                 break;
 
             case GameState.MarusaPhase:
-                Destroy(currentObject);
+               
                 currentObject = Instantiate(marusaPrefab, spawnPoint.position, Quaternion.identity);
                 break;
 
