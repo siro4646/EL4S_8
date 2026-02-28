@@ -5,7 +5,7 @@ public class SysTimer : MonoBehaviour
 {
     float startTime;
 
-    private enum GameState
+    public enum GameState
     {
         PlayerPhase,
         WaitForInput,
@@ -80,11 +80,12 @@ public class SysTimer : MonoBehaviour
                 break;
         }
     }
-    GameState GetNowGamestate()
+
+    public GameState GetNowGamestate()
     {
         return state;
     }
-    int GetTime()
+    public int GetTime()
     {
         return (int)Time.time;
     }
