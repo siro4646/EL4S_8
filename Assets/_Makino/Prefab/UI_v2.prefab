@@ -1026,7 +1026,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 64bfb0f1dc73611438c3447d3bd61928, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  turnDuration: 5
+  turnDuration: 60
   timerText: {fileID: 8981375786765562788}
   changeTurnPanel: {fileID: 6886999771560101890}
   turnUI: {fileID: 897856906600688193}
