@@ -17,33 +17,81 @@ namespace SimplestarGame
 
         internal void Fragment(RaycastHit hit)
         {
-            foreach (Transform child in transform)
+            // 子オブジェクトのMeshFilterを持つものを全て取得
+            MeshFilter[] childMeshFilters = GetComponentsInChildren<MeshFilter>();
+
+            foreach (MeshFilter childMeshFilter in childMeshFilters)
             {
-                var childFragmenter = child.GetComponent<VoronoiFragmenter>();
-                if (childFragmenter != null)
-                {
-                    childFragmenter.FragmentAtPoint(hit.point);
-                }
+                // 自身のMeshFilterは後で処理するのでスキップ
+                if (childMeshFilter.transform == this.transform)
+                    continue;
+
+                FragmentMesh(childMeshFilter, hit);
             }
-            if (!this.TryGetComponent(out MeshFilter initMeshFilter))
+
+            // 自身のMeshFilterがあれば処理
+            if (this.TryGetComponent(out MeshFilter selfMeshFilter))
             {
-                Debug.LogWarning("破壊するターゲットの MeshFilter がアタッチされていません");
+                FragmentMesh(selfMeshFilter, hit);
+            }
+        }
+
+
+        private void FragmentMesh(MeshFilter meshFilter, RaycastHit hit)
+        {
+            if (meshFilter.sharedMesh == null)
+            {
+                Debug.LogWarning($"破壊するターゲット {meshFilter.name} の Mesh がありません");
                 return;
             }
-            List<Transform> originalChildren = new List<Transform>();
-            foreach (Transform child in transform)
+
+            Transform meshTransform = meshFilter.transform;
+            var initVerts = meshFilter.sharedMesh.vertices;
+            var initNormals = meshFilter.sharedMesh.normals;
+            var initUVs = meshFilter.sharedMesh.uv;
+
+            // 配列の長さチェック
+            if (initVerts.Length == 0)
             {
-                originalChildren.Add(child);
+                Debug.LogWarning($"破壊するターゲット {meshFilter.name} の頂点がありません");
+                return;
             }
-            var scale = this.transform.localScale;
-            var initVerts = initMeshFilter.sharedMesh.vertices;
-            var initNormals = initMeshFilter.sharedMesh.normals;
-            var initUVs = initMeshFilter.sharedMesh.uv;
+
+            // 法線配列が頂点数と一致しない場合は再計算
+            if (initNormals.Length != initVerts.Length)
+            {
+                Debug.LogWarning($"{meshFilter.name}: 法線を再計算します");
+                Mesh tempMesh = Instantiate(meshFilter.sharedMesh);
+                tempMesh.RecalculateNormals();
+                initNormals = tempMesh.normals;
+                Destroy(tempMesh);
+            }
+
+            // UV配列が頂点数と一致しない場合はデフォルト値を使用
+            if (initUVs.Length != initVerts.Length)
+            {
+                Debug.LogWarning($"{meshFilter.name}: UVがありません。デフォルトUVを使用します");
+                initUVs = new Vector2[initVerts.Length];
+                for (int i = 0; i < initUVs.Length; i++)
+                {
+                    initUVs[i] = new Vector2(0.5f, 0.5f);
+                }
+            }
+
+            // ローカルスケールを取得
+            var scale = meshTransform.localScale;
             var resizedVerts = new Vector3[initVerts.Length];
+
+            // ローカル座標にスケールを適用
             for (int i = 0; i < initVerts.Length; i++)
             {
-                resizedVerts[i] = new Vector3(initVerts[i].x * scale.x, initVerts[i].y * scale.y, initVerts[i].z * scale.z);
-            }            
+                resizedVerts[i] = new Vector3(
+                    initVerts[i].x * scale.x,
+                    initVerts[i].y * scale.y,
+                    initVerts[i].z * scale.z
+                );
+            }
+
             List<Vector2> uniqueVerts = new List<Vector2>();
             Vector2 uniqueVertsCenter = Vector2.zero;
             Vector2 fwdBk = uniqueVertsCenter;
@@ -51,14 +99,17 @@ namespace SimplestarGame
             Vector2[] uvBoundsMin = new Vector2[6] { initUVMin, initUVMin, initUVMin, initUVMin, initUVMin, initUVMin };
             var initUVMax = new Vector2(0.0f, 0.0f);
             Vector2[] uvBoundsMax = new Vector2[6] { initUVMax, initUVMax, initUVMax, initUVMax, initUVMax, initUVMax };
+
             for (int i = 0; i < resizedVerts.Length; i++)
             {
                 Vector2 dotPoint = resizedVerts[i];
                 float depth = resizedVerts[i].z;
                 fwdBk.x = Mathf.Min(fwdBk.x, depth);
                 fwdBk.y = Mathf.Max(fwdBk.y, depth);
+
                 var n = initNormals[i];
-                int faceIdx = (int)this.GetNormalFaceIndex(n);                
+                int faceIdx = (int)this.GetNormalFaceIndex(n);
+
                 uvBoundsMin[faceIdx].x = Mathf.Min(uvBoundsMin[faceIdx].x, initUVs[i].x);
                 uvBoundsMin[faceIdx].y = Mathf.Min(uvBoundsMin[faceIdx].y, initUVs[i].y);
                 uvBoundsMax[faceIdx].x = Mathf.Max(uvBoundsMax[faceIdx].x, initUVs[i].x);
@@ -80,6 +131,14 @@ namespace SimplestarGame
                     uniqueVertsCenter += dotPoint;
                 }
             }
+
+            // uniqueVertsが空の場合は処理を中断
+            if (uniqueVerts.Count == 0)
+            {
+                Debug.LogWarning($"{meshFilter.name}: 有効な頂点がありません");
+                return;
+            }
+
             // 重心とバウンディングボックスを頂点座標から決定
             uniqueVertsCenter /= uniqueVerts.Count;
             Vector2 min = Vector2.zero;
@@ -93,23 +152,26 @@ namespace SimplestarGame
                 max.x = Mathf.Max(max.x, uniqueVert.x);
                 max.y = Mathf.Max(max.y, uniqueVert.y);
             }
+
             // bounds 決定
             float scaleX = max.x - min.x;
             float scaleY = max.y - min.y;
             float scaleZ = fwdBk.y - fwdBk.x;
+
             // ヒットした点を中心に円形ランダムプロット
             var sites = new List<Vector2f>();
             var bounds = new Rectf(min.x, min.y, scaleX, scaleY);
             float minScale = Mathf.Min(scaleX, scaleY);
-            this.transform.localScale = Vector3.one;
-            Vector3 localPos = this.transform.InverseTransformPoint(hit.point);
+
+            // ヒット点をローカル座標に変換
+            Vector3 localPos = meshTransform.InverseTransformPoint(hit.point);
             for (int i = 0; i < numberOfPoints; i++)
             {
                 var r = Random.Range(this.minFragmentSize * 0.5f, this.scaleRadius * minScale);
                 var theta = Random.Range(0, 2 * Mathf.PI);
                 var x = r * Mathf.Cos(theta);
                 var y = r * Mathf.Sin(theta);
-                Vector2 point =  new Vector2(localPos.x + x, localPos.y + y);
+                Vector2 point = new Vector2(localPos.x * scale.x + x, localPos.y * scale.y + y);
                 if (!MathUtils.IsInsideRect(min, max, point))
                 {
                     continue; // 矩形の外側のプロット点はスキップ
@@ -129,6 +191,7 @@ namespace SimplestarGame
                     sites.Add(new Vector2f(point.x, point.y));
                 }
             }
+
             // プロット点を使ってボロノイ図をバウンディングボックス矩形に描く
             var voronoi = new Voronoi(sites, bounds, 2);
             // ボロノイ図の小領域ごとに破片オブジェクトを作成
@@ -141,6 +204,7 @@ namespace SimplestarGame
                 regions.Add(new List<Vector2f>());
             }
             int invalidRegionCount = 0;
+
             foreach (var region in regions)
             {
                 List<Vector2> regionPoints = new List<Vector2>();
@@ -185,6 +249,7 @@ namespace SimplestarGame
                         continue;
                     }
                 }
+
                 // 領域のバウンディングボックスを求める
                 Vector2 fragmentLeftTop = new Vector2(0.5f * scaleX, 0.5f * scaleY);
                 Vector2 fragmentRihgtBottom = new Vector2(-0.5f * scaleX, -0.5f * scaleY);
@@ -310,7 +375,7 @@ namespace SimplestarGame
                         tris[t++] = (3 + skipIdx) * vCount + vIdx + 1;
                         tris[t++] = (2 + skipIdx) * vCount + vIdx + 1;
                         tris[t++] = (2 + skipIdx) * vCount + vIdx;
-                    }                    
+                    }
                 }
 
                 // 巻き割りしたような破片が作られる場合は、柱をランダムな面でスライスします
@@ -349,7 +414,7 @@ namespace SimplestarGame
                     var mesh = new Mesh();
                     var verts = new Vector3[6 * vCount + 2 * extraIdx];
                     var uvs = new Vector2[verts.Length];
-                    
+
                     Vector3 planePoint0 = planePoint;
                     planePoint0.z = -0.5f * scaleZ + sliceDepthArray[zIdx];
                     Vector3 planeNornal0 = planeNornals[zIdx];
@@ -417,7 +482,7 @@ namespace SimplestarGame
                                     float uvYNext = Mathf.Lerp(uvBoundsMin[srcFaceIdx].y, uvBoundsMax[srcFaceIdx].y, nextLerpY);
                                     uvs[(3 + skipIdx) * vCount + vIdx] = new Vector2(lerpZ0, uvYCurr);
                                     uvs[(2 + skipIdx) * vCount + vIdx] = new Vector2(lerpZ1, uvYCurr);
-                                    if (isLoop && 1 == extraIdx) //  && FaceType.Top == initFaceType
+                                    if (isLoop && 1 == extraIdx)
                                     {
                                         uvs[6 * vCount + 0] = new Vector2(nextLerpZ0, uvYNext);
                                         uvs[6 * vCount + 1] = new Vector2(nextLerpZ1, uvYNext);
@@ -438,7 +503,7 @@ namespace SimplestarGame
                                     uvs[(3 + skipIdx) * vCount + vIdx] = new Vector2(uvXCurr, lerpZ0);
                                     uvs[(2 + skipIdx) * vCount + vIdx] = new Vector2(uvXCurr, lerpZ1);
 
-                                    if (isLoop && 1 == extraIdx) //  && FaceType.Top == initFaceType
+                                    if (isLoop && 1 == extraIdx)
                                     {
                                         uvs[6 * vCount + 0] = new Vector2(uvXNext, nextLerpZ0);
                                         uvs[6 * vCount + 1] = new Vector2(uvXNext, nextLerpZ1);
@@ -446,7 +511,7 @@ namespace SimplestarGame
                                     }
                                     else
                                     {
-                                        
+
                                         uvs[(3 + skipIdx) * vCount + nextVIdx] = new Vector2(uvXNext, nextLerpZ0);
                                         uvs[(2 + skipIdx) * vCount + nextVIdx] = new Vector2(uvXNext, nextLerpZ1);
                                     }
@@ -491,19 +556,24 @@ namespace SimplestarGame
                     mesh.RecalculateTangents();
 
                     var fragment = Instantiate(this.fragmentPrefab);
-                    fragment.name = this.name + "_fragment" + zIdx + ((1 == extraIdx) ? "extra" : "");
-                    fragment.transform.SetParent(this.transform, false);
-                    fragment.transform.localPosition = v3Center;
-                    fragment.transform.localRotation = Quaternion.identity;
+                    fragment.name = meshFilter.name + "_fragment" + zIdx + ((1 == extraIdx) ? "extra" : "");
+
+                    // ワールド座標に変換して配置
+                    Vector3 worldCenter = meshTransform.TransformPoint(new Vector3(
+                        v3Center.x / scale.x,
+                        v3Center.y / scale.y,
+                        v3Center.z / scale.z
+                    ));
+                    fragment.transform.position = worldCenter;
+                    fragment.transform.rotation = meshTransform.rotation;
                     fragment.transform.localScale = Vector3.one;
-                    fragment.transform.SetParent(null);
                     fragment.sharedMesh = mesh;
 
-                    if (this.TryGetComponent(out MeshRenderer myMeshRenderer))
+                    if (meshFilter.TryGetComponent(out MeshRenderer sourceMeshRenderer))
                     {
                         if (fragment.TryGetComponent(out MeshRenderer meshRenderer))
                         {
-                            meshRenderer.material = new Material(myMeshRenderer.material);
+                            meshRenderer.material = new Material(sourceMeshRenderer.material);
                         }
                     }
                     if (fragment.TryGetComponent(out MeshCollider meshCollider))
@@ -511,7 +581,7 @@ namespace SimplestarGame
                         meshCollider.sharedMesh = mesh;
                     }
                     fragment.gameObject.AddComponent<MeshCleaner>();
-                    
+
                     float reFragmentSize = scaleZ * 1.5f;
                     if (reFragmentSize < fragmentW && reFragmentSize < fragmentH)
                     {
@@ -533,32 +603,16 @@ namespace SimplestarGame
                 }
             }
 
-            this.transform.localScale = scale;
             if (0 < createdMeshCount)
             {
-                // 自オブジェクトのコライダーとメッシュ非表示
-                if (this.TryGetComponent(out Collider collider))
+                // 元のメッシュオブジェクトのコライダーとレンダラーを無効化
+                if (meshFilter.TryGetComponent(out Collider collider))
                 {
                     Destroy(collider);
                 }
-                if (this.TryGetComponent(out Renderer renderer))
+                if (meshFilter.TryGetComponent(out Renderer renderer))
                 {
                     renderer.enabled = false;
-                }
-                List<Transform> childs = new List<Transform>();
-                foreach (Transform childTransform in this.transform)
-                {
-                    childs.Add(childTransform);
-                }
-                foreach (Transform child in originalChildren)
-                {
-                    if (child == null) continue;
-
-                    // 既にFragment済みなら消さない
-                    if (child.GetComponent<VoronoiFragmenter>() != null)
-                        continue;
-
-                    Destroy(child.gameObject);
                 }
             }
         }
@@ -587,7 +641,7 @@ namespace SimplestarGame
             {
                 return FaceType.Front;
             }
-            else if(1 == normal.z)
+            else if (1 == normal.z)
             {
                 return FaceType.Back;
             }
@@ -619,7 +673,7 @@ namespace SimplestarGame
         FaceType GetSideFaceType(Vector2 coord, Vector2 nextCoord)
         {
             var diff = nextCoord - coord;
-            if(0 == diff.x)
+            if (0 == diff.x)
             {
                 if (diff.y > 0)
                 {
