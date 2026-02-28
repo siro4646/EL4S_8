@@ -87,6 +87,6 @@ public class SysTimer : MonoBehaviour
     }
     public int GetTime()
     {
-        return (int)Time.time;
+        return (int)Time.time-(int)startTime;
     }
 }
