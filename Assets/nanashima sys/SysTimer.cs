@@ -74,8 +74,16 @@ public class SysTimer : MonoBehaviour
                 break;
 
             case GameState.End:
-                SceneManager.LoadScene("EndScene");
+                SceneManager.LoadScene("GameoverScene");
                 break;
         }
+    }
+    GameState GetNowGamestate()
+    {
+        return state;
+    }
+    int GetTime()
+    {
+        return (int)Time.time;
     }
 }
