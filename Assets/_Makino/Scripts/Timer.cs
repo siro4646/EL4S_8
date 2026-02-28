@@ -24,12 +24,12 @@ public class Timer : MonoBehaviour
         else
         {
             OnTimerReset();
-            timeRemaining = turnDuration;
+            turnManager.SwitchTurn();
         }
     }
 
-    void OnTimerReset()
+    public void OnTimerReset()
     {
-        turnManager.SwitchTurn();
+        timeRemaining = turnDuration;
     }
 }
