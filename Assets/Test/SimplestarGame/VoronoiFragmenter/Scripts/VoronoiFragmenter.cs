@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace SimplestarGame
 {
+    [RequireComponent(typeof(Rigidbody))]
     public class VoronoiFragmenter : MonoBehaviour
     {
         [SerializeField] MeshFilter fragmentPrefab;
