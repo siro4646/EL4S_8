@@ -34,4 +34,9 @@ public class TurnUI : MonoBehaviour
             turnText.color = Color.blue;
         }
     }
+
+    public bool IsAuditorTurn()
+    {
+        return !is1PTurn;
+    }
 }
