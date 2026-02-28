@@ -2,22 +2,22 @@ using UnityEngine;
 
 public class EventObject : MonoBehaviour
 {
-    bool _isHidden = false;
-    public bool IsHidden
+    public enum HiddenType
     {
-        get => _isHidden;
-        set
-        {
-            _isHidden = value;
-        }
+        None,
+        Real,
+        Dummy
     }
+
+    [SerializeField] private HiddenType hiddenType = HiddenType.None;
+
+    public HiddenType CurrentHiddenType => hiddenType;
+
     BreakableObject breakableObject;
 
-    public GameObject okaneObj;
-    public void Hide()
-    {
-        IsHidden = true;
-    }
+    [Header("Objects")]
+    public GameObject realObject;
+    public GameObject dummyObject;
 
     void OnEnable()
     {
@@ -36,15 +36,47 @@ public class EventObject : MonoBehaviour
         }
     }
 
+    // 🎯 隠す対象を指定
+    public bool Hide(HiddenType type)
+    {
+        if (hiddenType != HiddenType.None)
+        {
+            return false; // すでに隠れている場合は無視
+        }
+        hiddenType = type;
+        return true;
+    }
+
     void HandleBreak(BreakableObject obj)
     {
-        if (obj == breakableObject)
+        if (obj != breakableObject)
+            return;
+
+        Debug.Log("破壊イベント受信: " + obj.name);
+
+        switch (hiddenType)
         {
-            Debug.Log("破壊イベント受信: " + obj.name);
-            if(IsHidden)
-            {
-                Instantiate(okaneObj, transform.position, Quaternion.identity);
-            }
+            case HiddenType.Real:
+                Instantiate(realObject, transform.position, Quaternion.identity);
+                break;
+
+            case HiddenType.Dummy:
+                Instantiate(dummyObject, transform.position, Quaternion.identity);
+                break;
+
+            case HiddenType.None:
+            default:
+                break;
         }
+
+        hiddenType = HiddenType.None; // リセット
+    }
+
+    public void OnSonarDetected()
+    {
+        // 例：光らせる
+        Debug.Log("ソナーに反応: " + name);
+
+        // エフェクトやアウトラインを有効化など
     }
 }
