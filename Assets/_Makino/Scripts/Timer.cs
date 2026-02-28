@@ -11,10 +11,13 @@ public class Timer : MonoBehaviour
     public GameObject changeTurnPanel; // 2. 「Enterを押して交代」を表示するUIパネル
     public TurnUI turnUI;
 
+    public SysTimer timer;
+
     void Start()
     {
         timeRemaining = turnDuration;
         isTimerRunning = true;
+        timer = GameObject.FindAnyObjectByType<SysTimer>();
     }
 
     void Update()
@@ -25,6 +28,7 @@ public class Timer : MonoBehaviour
             {
                 timeRemaining -= Time.deltaTime;
                 timerText.text = "Time:" + Mathf.CeilToInt(timeRemaining).ToString();
+                timerText.text = "Time:" + (60 - timer.GetTime());
             }
             else
             {

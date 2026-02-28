@@ -7,13 +7,13 @@ public class ItemSlotUI : MonoBehaviour
     public Image selectFrame;    // 裏側に置いた選択中テクスチャ
     public int currentCount;     // このアイテムの残り数
 
-    // 1. 選択状態を切り替える (外部から呼ぶ)
+    // 選択状態を切り替える (外部から呼ぶ)
     public void SetSelect(bool isSelected)
     {
         selectFrame.enabled = isSelected; // 選択中なら表示、そうでないなら非表示
     }
 
-    // 2. 表示を更新する (個数が変わるたびに呼ぶ)
+    // 表示を更新する (個数が変わるたびに呼ぶ)
     public void RefreshDisplay(int count)
     {
         currentCount = count;
