@@ -18,7 +18,7 @@ public class QuantityUI : MonoBehaviour
     {
         if (countText != null)
         {
-            countText.text = currentCount.ToString() + " / 5";
+            countText.text = currentCount.ToString() + " / " + initialCount.ToString();
         }
     }
 
