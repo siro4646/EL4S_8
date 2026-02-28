@@ -42,11 +42,21 @@ public class HideMoney : MonoBehaviour
         }
     }
     // 🎯 外部から呼び出す用
-    public void HideMoneyNearest()
+    public bool HideRealMoneyNearest()
     {
         if (currentTarget != null)
         {
-            currentTarget.IsHidden = true;
+            return currentTarget.Hide(EventObject.HiddenType.Real);
         }
+        return false;
+    }
+
+    public bool HideDummyMoneyNearest()
+    {
+        if (currentTarget != null)
+        {
+            return currentTarget.Hide(EventObject.HiddenType.Dummy);
+        }
+        return false;
     }
 }
