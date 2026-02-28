@@ -1,13 +1,14 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class Timer : MonoBehaviour
+public class SysTimer : MonoBehaviour
 {
     float startTime;
 
     private enum GameState
     {
         PlayerPhase,
+        WaitForInput,
         MarusaPhase,
         End
     }
@@ -23,30 +24,48 @@ public class Timer : MonoBehaviour
     void Start()
     {
         ChangeState(GameState.PlayerPhase);
-        startTime = Time.time;
     }
 
     void Update()
     {
-        if (Time.time - startTime >= 60f)
+        switch (state)
         {
-            if (state == GameState.PlayerPhase)
-                ChangeState(GameState.MarusaPhase);
-            else if (state == GameState.MarusaPhase)
-                ChangeState(GameState.End);
+            case GameState.PlayerPhase:
+                if (Time.time - startTime >= 60f)
+                {
+                    ChangeState(GameState.WaitForInput);
+                }
+                break;
 
-            startTime = Time.time;
+            case GameState.WaitForInput:
+                if (Input.GetKeyDown(KeyCode.Space))
+                {
+                    ChangeState(GameState.MarusaPhase);
+                }
+                break;
+
+            case GameState.MarusaPhase:
+                if (Time.time - startTime >= 60f)
+                {
+                    ChangeState(GameState.End);
+                }
+                break;
         }
     }
 
     void ChangeState(GameState newState)
     {
         state = newState;
+        startTime = Time.time;
 
         switch (state)
         {
             case GameState.PlayerPhase:
                 currentObject = Instantiate(playerPrefab, spawnPoint.position, Quaternion.identity);
+                break;
+
+            case GameState.WaitForInput:
+                // プレイヤーは残したまま待つ
                 break;
 
             case GameState.MarusaPhase:
