@@ -11,10 +11,9 @@ public class TurnUI : MonoBehaviour
         UpdateTurnUI();
     }
 
-    
+    //ターン反転
     public void SwitchTurn()
     {
-        //ターン反転
         is1PTurn = !is1PTurn;
         UpdateTurnUI();
     }
@@ -24,12 +23,14 @@ public class TurnUI : MonoBehaviour
     {
         if (is1PTurn)
         {
+            //隠す側のターン
             turnText.text = "TaxEvader";
             turnText.color = Color.red;
         }
         else
         {
-            turnText.text = "Surveyor";
+            //見つける側のターン
+            turnText.text = "TaxAuditor";
             turnText.color = Color.blue;
         }
     }
