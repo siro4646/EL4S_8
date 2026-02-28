@@ -17,6 +17,14 @@ namespace SimplestarGame
 
         internal void Fragment(RaycastHit hit)
         {
+            foreach (Transform child in transform)
+            {
+                var childFragmenter = child.GetComponent<VoronoiFragmenter>();
+                if (childFragmenter != null)
+                {
+                    childFragmenter.FragmentAtPoint(hit.point);
+                }
+            }
             if (!this.TryGetComponent(out MeshFilter initMeshFilter))
             {
                 Debug.LogWarning("破壊するターゲットの MeshFilter がアタッチされていません");
@@ -542,14 +550,23 @@ namespace SimplestarGame
                 {
                     childs.Add(childTransform);
                 }
-                // 元の子オブジェクトを削除
                 foreach (Transform child in originalChildren)
                 {
+                    if (child == null) continue;
+
+                    // 既にFragment済みなら消さない
+                    if (child.GetComponent<VoronoiFragmenter>() != null)
+                        continue;
+
                     Destroy(child.gameObject);
                 }
             }
         }
 
+        private void Start()
+        {
+            GetComponent<Rigidbody>().useGravity = false;
+        }
 
         public void FragmentAtPoint(Vector3 worldPoint)
         {
