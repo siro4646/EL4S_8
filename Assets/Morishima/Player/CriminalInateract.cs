@@ -1,18 +1,18 @@
 using UnityEngine;
 
 [RequireComponent(typeof(HideMoney))]
-[RequireComponent(typeof(ObjectBreaker))]
-public class PlayerInteract : MonoBehaviour
+public class CriminalInateract : MonoBehaviour
 {
     HideMoney hideMoney;
-    ObjectBreaker objectBreaker;
     [SerializeField] private KeyCode hideMoneyKey = KeyCode.Space;
-    [SerializeField] private KeyCode breakObjectKey = KeyCode.B;
+
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         hideMoney = GetComponent<HideMoney>();
-        objectBreaker = GetComponent<ObjectBreaker>();
+
     }
+
     // Update is called once per frame
     void Update()
     {
@@ -20,10 +20,5 @@ public class PlayerInteract : MonoBehaviour
         {
             hideMoney.HideMoneyNearest();
         }
-        if (Input.GetKeyDown(breakObjectKey))
-        {
-            objectBreaker.BreakNearest();
-        }
-
     }
 }
