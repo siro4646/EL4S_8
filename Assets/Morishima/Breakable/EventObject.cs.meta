@@ -1,0 +1,12 @@
+fileFormatVersion: 2
+guid: 49ee8ad71a990b841a8a867baa5ded15
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - okaneObj: {fileID: 2712864042701609097, guid: 295dd01d212e81e4e8d4d6ef1d44c00d, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
