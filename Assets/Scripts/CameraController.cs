@@ -34,4 +34,9 @@ public class CameraController : MonoBehaviour
         float yaw = input * yawSpeed * Time.deltaTime;
         transform.Rotate(0f, yaw, 0f, Space.World);
     }
+
+    public void ResetTarget()
+    {
+        target = GameObject.FindGameObjectWithTag("Player")?.transform;
+    }
 }
