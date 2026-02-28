@@ -17,7 +17,7 @@ public class playerController : MonoBehaviour
     [SerializeField] private string speedParam = "Speed";
     [SerializeField] private float animDamp = 0.12f;
 
-    private void Awake()
+    private void Start()
     {
         controller = GetComponent<CharacterController>();
 

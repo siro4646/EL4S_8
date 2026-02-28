@@ -10,12 +10,7 @@ public class CameraController : MonoBehaviour
 
     private void Start()
     {
-        if (!target)
-        {
-            target = GameObject.FindGameObjectWithTag("Player")?.transform;
-            if (!target)
-                Debug.LogError("PlayerにPlayerTagつけて");
-        }
+        
     }
 
     void LateUpdate()
@@ -37,6 +32,11 @@ public class CameraController : MonoBehaviour
 
     public void ResetTarget()
     {
-        target = GameObject.FindGameObjectWithTag("Player")?.transform;
+        if (!target)
+        {
+            target = GameObject.FindGameObjectWithTag("Player")?.transform;
+            if (!target)
+                Debug.LogError("PlayerにPlayerTagつけて");
+        }
     }
 }
